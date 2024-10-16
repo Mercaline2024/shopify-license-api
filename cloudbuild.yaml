@@ -1,8 +1,6 @@
 options:
   logging: CLOUD_LOGGING_ONLY
 
-logsBucket: "gs://rational-energy-438823-m6_cloudbuild_logs"
-
 steps:
 # Build the container image
 - name: 'gcr.io/cloud-builders/docker'
