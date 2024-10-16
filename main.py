@@ -113,3 +113,12 @@ def hello():
 if __name__ == '__main__':
     print(f"Iniciando servidor en el puerto {os.environ.get('PORT', 8080)}...", file=sys.stderr)
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+    print("Configuración de la aplicación completada", file=sys.stderr)
+
+if __name__ == '__main__':
+    print(f"Iniciando servidor en modo de desarrollo...", file=sys.stderr)
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+else:
+    print("Aplicación iniciada por Gunicorn", file=sys.stderr)
+
+# No es necesario llamar a app.run() aquí, Gunicorn se encargará de eso
