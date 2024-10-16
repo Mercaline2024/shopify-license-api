@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-# Este comentario se añadió para probar el activador de Cloud Build 2024
+# Este comentario se añadió para probar el activador de Cloud Build 202411
 
 app = Flask(__name__)
 limiter = Limiter(app, key_func=get_remote_address)
