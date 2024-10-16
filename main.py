@@ -1,27 +1,15 @@
 from flask import Flask, request, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from google.cloud import firestore
 import os
-import json
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
 limiter = Limiter(app, key_func=get_remote_address)
 
-# En producción, usa una base de datos real
-LICENSES_FILE = 'licenses.json'
-
-def load_licenses():
-    if os.path.exists(LICENSES_FILE):
-        with open(LICENSES_FILE, 'r') as f:
-            return json.load(f)
-    return {}
-
-def save_licenses(licenses):
-    with open(LICENSES_FILE, 'w') as f:
-        json.dump(licenses, f)
-
-licenses = load_licenses()
+db = firestore.Client()
+licenses_collection = db.collection('licenses')
 
 @app.route('/verify-license', methods=['POST'])
 @limiter.limit("5 per minute")
@@ -33,15 +21,17 @@ def verify_license():
     if not license_key or not shop_domain:
         return jsonify({"error": "License key and shop domain are required"}), 400
     
-    license_info = licenses.get(license_key)
+    license_doc = licenses_collection.document(license_key).get()
     
-    if not license_info:
+    if not license_doc.exists:
         return jsonify({"valid": False, "message": "Invalid license key"}), 403
+    
+    license_info = license_doc.to_dict()
     
     if license_info['shop_domain'] != shop_domain:
         return jsonify({"valid": False, "message": "License key is not valid for this shop"}), 403
     
-    if datetime.now() > datetime.fromisoformat(license_info['expiry_date']):
+    if datetime.now() > license_info['expiry_date'].replace(tzinfo=None):
         return jsonify({"valid": False, "message": "License has expired"}), 403
     
     return jsonify({"valid": True, "message": "License is valid"}), 200
@@ -57,15 +47,14 @@ def create_license():
         return jsonify({"error": "Shop domain is required"}), 400
     
     license_key = os.urandom(16).hex()
-    expiry_date = (datetime.now() + timedelta(days=duration_days)).isoformat()
+    expiry_date = datetime.now() + timedelta(days=duration_days)
     
-    licenses[license_key] = {
+    licenses_collection.document(license_key).set({
         "shop_domain": shop_domain,
         "expiry_date": expiry_date
-    }
-    save_licenses(licenses)
+    })
     
-    return jsonify({"license_key": license_key, "expiry_date": expiry_date}), 201
+    return jsonify({"license_key": license_key, "expiry_date": expiry_date.isoformat()}), 201
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
