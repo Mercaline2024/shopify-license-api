@@ -1,9 +1,12 @@
+
 from flask import Flask, request, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from google.cloud import firestore
 import os
 from datetime import datetime, timedelta
+from flask_cors import CORS
+CORS(app)
 
 app = Flask(__name__)
 limiter = Limiter(app, key_func=get_remote_address)
